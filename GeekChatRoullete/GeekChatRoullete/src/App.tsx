@@ -5,7 +5,7 @@ import { io, Socket } from 'socket.io-client';
 import {
     Container, Box, Typography, Select, MenuItem,
     FormControl, InputLabel, TextField, Button, Slider,
-    Paper, List, ListItem, CssBaseline, ThemeProvider, createTheme, SelectChangeEvent,
+        Paper, List, ListItem, CssBaseline, ThemeProvider, createTheme,
     Stack, IconButton, CircularProgress, Alert, useMediaQuery, useTheme, Avatar
 } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
@@ -68,7 +68,6 @@ const containerVariants = {
 // ====================================================================================
 // 2. КОМПОНЕНТ ЭКРАНА ПОИСКА (SearchScreen)
 // ====================================================================================
-// ... (Этот компонент не менялся)
 interface SearchScreenProps {
     onSearch: (criteria: SearchCriteria) => void;
 }
@@ -125,7 +124,11 @@ const Chat: React.FC<ChatProps> = ({ messages, onSendMessage, notification, onEx
     };
 
     const formatTime = (isoString: string) => {
-        return new Date(isoString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        try {
+            return new Date(isoString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        } catch (e) {
+            return '--:--';
+        }
     };
 
     return (
@@ -133,33 +136,53 @@ const Chat: React.FC<ChatProps> = ({ messages, onSendMessage, notification, onEx
             <Stack component={Paper} elevation={6} sx={{ flexGrow: 1, p: { xs: 1, sm: 2 }, borderRadius: 4, overflow: 'hidden', backgroundColor: 'rgba(20, 25, 35, 0.7)', backdropFilter: 'blur(10px)' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', p: 1, borderBottom: '1px solid rgba(255, 255, 255, 0.12)' }}>
                     <GroupsIcon color="primary" />
-                    <Typography variant="h6" sx={{ ml: 2 }}>Чат с незнакомцем</Typography>
+                    <Typography variant="h6" sx={{ ml: 2, flexGrow: 1 }}>Чат с незнакомцем</Typography>
                     <IconButton onClick={onExit} sx={{ml: 'auto'}} title="Выйти из чата"><LogoutIcon /></IconButton>
                 </Box>
 
                 <List sx={{ flexGrow: 1, overflowY: 'auto', p: { xs: 1, sm: 2 } }}>
                     <AnimatePresence>
                         {messages.map((msg, index) => (
-                            <motion.div key={index} layout initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }}>
-                                <Box sx={{ display: 'flex', justifyContent: msg.from === 'me' ? 'flex-end' : 'flex-start', my: 1 }}>
-                                    <Stack direction="row" spacing={1} alignItems="flex-end">
-                                        {msg.from === 'partner' && <Avatar sx={{ width: 28, height: 28, bgcolor: '#3e4a59' }}><PersonIcon fontSize="small"/></Avatar>}
-                                        <Stack sx={{
-                                            p: '8px 16px',
-                                            borderRadius: msg.from === 'me' ? '20px 5px 20px 20px' : '5px 20px 20px 20px',
-                                            background: msg.from === 'me' ? 'linear-gradient(45deg, #0077B6, #00BFFF)' : '#37474F',
-                                            color: 'white',
-                                            // --- ИСПРАВЛЕНИЕ: Увеличена максимальная ширина ---
-                                            maxWidth: { xs: '90%', sm: '85%' },
-                                            boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-                                        }}>
-                                            <Typography variant="body1" sx={{ wordBreak: 'break-word' }}>{msg.text}</Typography>
-                                            <Typography variant="caption" sx={{ opacity: 0.7, alignSelf: 'flex-end', mt: 0.5 }}>{formatTime(msg.time)}</Typography>
-                                        </Stack>
-                                        {msg.from === 'me' && <Avatar sx={{ width: 28, height: 28, bgcolor: 'primary.main' }}><PersonIcon fontSize="small"/></Avatar>}
+                            <ListItem
+                                key={index}
+                                sx={{
+                                    display: 'flex',
+                                    justifyContent: msg.from === 'me' ? 'flex-end' : 'flex-start',
+                                    width: '100%', // Важно!
+                                    p: 0,
+                                    my: 1,
+                                }}
+                                component={motion.li}
+                                layout
+                                initial={{ opacity: 0, y: 50 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ type: 'spring', stiffness: 250, damping: 25 }}
+                            >
+                                <Stack direction="row" spacing={1} alignItems="flex-end"
+                                       sx={{
+                                           width: 'auto',
+                                           maxWidth: '100%',
+                                           ml: msg.from === 'me' ? 'auto' : 0, // Важно! Прижимает к правому краю
+                                           mr: msg.from === 'partner' ? 'auto' : 0, // Для собеседника — к левому
+                                       }}
+                                >
+                                    {msg.from === 'partner' && <Avatar sx={{ width: 28, height: 28, bgcolor: '#3e4a59' }}><PersonIcon fontSize="small"/></Avatar>}
+                                    <Stack sx={{
+                                        p: '8px 16px',
+                                        borderRadius: msg.from === 'me' ? '20px 5px 20px 20px' : '5px 20px 20px 20px',
+                                        background: msg.from === 'me' ? 'linear-gradient(45deg, #0077B6, #00BFFF)' : '#37474F',
+                                        color: 'white',
+                                        maxWidth: { xs: '90vw', sm: '80vw', md: '70vw' }, // Лучше vw, чтобы не было переполнения
+                                        boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+                                        alignSelf: msg.from === 'me' ? 'flex-end' : 'flex-start', // Важно!
+                                    }}>
+                                        <Typography variant="body1" sx={{ wordBreak: 'break-word' }}>{msg.text}</Typography>
+                                        <Typography variant="caption" sx={{ opacity: 0.7, alignSelf: 'flex-end', mt: 0.5 }}>{formatTime(msg.time)}</Typography>
                                     </Stack>
-                                </Box>
-                            </motion.div>
+                                    {msg.from === 'me' && <Avatar sx={{ width: 28, height: 28, bgcolor: 'primary.main' }}><PersonIcon fontSize="small"/></Avatar>}
+                                </Stack>
+                            </ListItem>
+
                         ))}
                     </AnimatePresence>
                     <div ref={messagesEndRef} />
@@ -169,7 +192,7 @@ const Chat: React.FC<ChatProps> = ({ messages, onSendMessage, notification, onEx
 
                 <Box component="form" sx={{ display: 'flex', p: 1, alignItems: 'center', borderTop: '1px solid rgba(255, 255, 255, 0.12)' }} onSubmit={(e) => { e.preventDefault(); handleSend(); }}>
                     <TextField fullWidth variant="outlined" size="small" placeholder="Напишите сообщение..." value={currentMessage} onChange={(e) => setCurrentMessage(e.target.value)} sx={{ '& .MuiOutlinedInput-root': { borderRadius: '20px', bgcolor: 'rgba(0,0,0,0.2)' } }} />
-                    <IconButton type="submit" color="primary" sx={{ ml: 1 }}><SendIcon /></IconButton>
+                    <IconButton type="submit" color="primary" sx={{ ml: 1 }} disabled={!currentMessage.trim()}><SendIcon /></IconButton>
                 </Box>
             </Stack>
         </Container>
@@ -190,9 +213,18 @@ function App() {
         socket.on('receive_message', (data) => setMessages((list) => [...list, { ...data, from: 'partner' }]));
         socket.on('partner_disconnected', (data) => {
             setNotification(data.message);
-            setTimeout(() => { setChatState('config'); setNotification(''); }, 4000);
+            const timer = setTimeout(() => {
+                setChatState('config');
+                setNotification('');
+            }, 4000);
+            return () => clearTimeout(timer);
         });
-        return () => { socket.off('chat_found'); socket.off('receive_message'); socket.off('partner_disconnected'); };
+
+        return () => {
+            socket.off('chat_found');
+            socket.off('receive_message');
+            socket.off('partner_disconnected');
+        };
     }, []);
 
     const startSearch = (criteria: SearchCriteria) => { socket.emit('start_search', criteria); setChatState('searching'); };
@@ -201,7 +233,13 @@ function App() {
         socket.emit('send_message', messageData);
         setMessages((list) => [...list, { ...messageData, from: 'me' }]);
     };
-    const handleExitChat = () => { socket.disconnect(); socket.connect(); setChatState('config'); };
+    const handleExitChat = () => {
+        socket.disconnect();
+        socket.connect();
+        setChatState('config');
+        setMessages([]);
+        setNotification('');
+    };
 
     const renderContent = () => {
         switch (chatState) {
