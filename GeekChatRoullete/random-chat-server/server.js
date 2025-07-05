@@ -1,21 +1,30 @@
 // server.js
-const express = require('express');
+const fs = require('fs');
+const https = require('https');
 const http = require('http');
+const express = require('express');
 const { Server } = require("socket.io");
 const cors = require('cors');
 
 const app = express();
 app.use(cors());
 
-const server = http.createServer(app);
-const io = new Server(server, {
+// Пути к сертификатам Let's Encrypt
+const privateKey = fs.readFileSync('/etc/letsencrypt/live/geekchatrulette.ru/privkey.pem', 'utf8');
+const certificate = fs.readFileSync('/etc/letsencrypt/live/geekchatrulette.ru/fullchain.pem', 'utf8');
+const credentials = { key: privateKey, cert: certificate };
+
+// HTTPS сервер
+const httpsServer = https.createServer(credentials, app);
+const io = new Server(httpsServer, {
     cors: {
-        origin: "*", // разрешить все источники
-        methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"], // разрешить все распространённые методы
-        allowedHeaders: ["*"], // разрешить любые заголовки
-        credentials: true // если нужно поддерживать cookie/авторизацию
+        origin: "*",
+        methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        allowedHeaders: ["*"],
+        credentials: true
     }
 });
+
 let waitingPool = [];
 const activeChats = {}; // { roomId: [socket1, socket2] }
 
@@ -98,7 +107,15 @@ function findPartner(socket) {
     return null; // Партнер не найден
 }
 
-const PORT = 3228;
-server.listen(PORT, () => {
-    console.log(`SERVER IS RUNNING ON PORT ${PORT}`);
+const HTTPS_PORT = 3228;
+httpsServer.listen(HTTPS_PORT, () => {
+    console.log(`SERVER IS RUNNING ON PORT ${HTTPS_PORT} (HTTPS)`);
+});
+
+// HTTP -> HTTPS редирект
+http.createServer((req, res) => {
+    res.writeHead(301, { "Location": "https://" + req.headers['host'] + req.url });
+    res.end();
+}).listen(80, () => {
+    console.log('HTTP server running and redirecting all traffic to HTTPS');
 });

@@ -40,7 +40,7 @@ interface ClientToServerEvents {
     send_message: (data: Omit<Message, 'from'>) => void;
 }
 
-const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io("http://localhost:3001");
+const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io("https://geekchatrulette.ru:3228");
 
 const beautifulTheme = createTheme({
     palette: {
