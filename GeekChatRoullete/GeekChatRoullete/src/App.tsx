@@ -77,7 +77,6 @@ const AgreementScreen: React.FC<AgreementScreenProps> = ({ onAccept }) => {
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
     return (
-        // === ИЗМЕНЕНИЕ: Этот компонент теперь тоже возвращает только Paper ===
         <Paper sx={{ p: isMobile ? 3 : 4, borderRadius: 4, backdropFilter: 'blur(10px)', backgroundColor: 'rgba(30, 30, 40, 0.6)', border: '1px solid rgba(255, 255, 255, 0.1)', boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)' }}>
             <Stack spacing={2.5} alignItems="center">
                 <Typography variant={isMobile ? 'h5' : 'h4'} component="h1" sx={{ fontWeight: 700, textAlign: 'center' }}>
@@ -127,7 +126,6 @@ const SearchScreen: React.FC<SearchScreenProps> = ({ onSearch }) => {
     const [partnerAge, setPartnerAge] = useState<number[]>([18, 40]);
     const handleSearch = () => onSearch({ myGender, myAge, partnerGender, partnerAge: { min: partnerAge[0], max: partnerAge[1] } });
 
-    // === ИЗМЕНЕНИЕ: Убираем Container отсюда, он будет в App.tsx ===
     return (
         <Paper sx={{ p: isMobile ? 3 : 4, borderRadius: 4, backdropFilter: 'blur(10px)', backgroundColor: 'rgba(30, 30, 40, 0.6)', border: '1px solid rgba(255, 255, 255, 0.1)', boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)' }}>
             <Stack spacing={3} alignItems="center">
@@ -227,6 +225,12 @@ function App() {
     const [notification, setNotification] = useState<string>('');
 
     useEffect(() => {
+        // === НАЧАЛО: SEO и прослушиватели событий ===
+        // Устанавливаем заголовок страницы при загрузке.
+        // Это гарантирует, что заголовок будет правильным, даже если он не был установлен в index.html.
+        document.title = "Анонимный Чат Рулетка: Общение без Рекламы с Выбором Пола";
+
+        // Настройка прослушивателей сокетов
         socket.on('chat_found', () => { setMessages([]); setNotification(''); setChatState('chat'); });
         socket.on('receive_message', (data) => setMessages((list) => [...list, { ...data, from: 'partner' }]));
         socket.on('partner_disconnected', (data) => {
@@ -234,8 +238,15 @@ function App() {
             const timer = setTimeout(() => { setChatState('config'); setNotification(''); }, 4000);
             return () => clearTimeout(timer);
         });
-        return () => { socket.off('chat_found'); socket.off('receive_message'); socket.off('partner_disconnected'); };
-    }, []);
+
+        // Очистка при размонтировании компонента
+        return () => {
+            socket.off('chat_found');
+            socket.off('receive_message');
+            socket.off('partner_disconnected');
+        };
+        // === КОНЕЦ: SEO и прослушиватели событий ===
+    }, []); // Пустой массив зависимостей означает, что этот эффект выполнится один раз при монтировании
 
     const handleAcceptAgreement = () => setChatState('config');
     const startSearch = (criteria: SearchCriteria) => { socket.emit('start_search', criteria); setChatState('searching'); };
@@ -256,7 +267,6 @@ function App() {
         switch (chatState) {
             case 'agreement':
                 return (
-                    // === ИЗМЕНЕНИЕ: Оборачиваем в Container здесь ===
                     <Container maxWidth="sm" sx={{ width: '100%' }}>
                         <motion.div key="agreement" variants={containerVariants} initial="hidden" animate="visible" exit="exit">
                             <AgreementScreen onAccept={handleAcceptAgreement} />
@@ -265,7 +275,6 @@ function App() {
                 );
             case 'config':
                 return (
-                    // === ИЗМЕНЕНИЕ: Оборачиваем в Container здесь ===
                     <Container maxWidth="sm" sx={{ width: '100%' }}>
                         <motion.div key="config" variants={containerVariants} initial="hidden" animate="visible" exit="exit">
                             <SearchScreen onSearch={startSearch} />
@@ -295,7 +304,6 @@ function App() {
     return (
         <ThemeProvider theme={beautifulTheme}>
             <CssBaseline />
-            {/* === ИЗМЕНЕНИЕ: Убираем горизонтальные отступы для xs, чтобы дочерние компоненты управляли своей шириной === */}
             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100dvh', width: '100vw', background: 'linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%)', overflow: 'hidden', p: { xs: 0, sm: 2 } }}>
                 <AnimatePresence mode="wait">{renderContent()}</AnimatePresence>
             </Box>
