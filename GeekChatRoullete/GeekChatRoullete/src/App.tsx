@@ -5,7 +5,7 @@ import { io, Socket } from 'socket.io-client';
 import {
     Container, Box, Typography, Select, MenuItem,
     FormControl, InputLabel, TextField, Button, Slider,
-        Paper, List, ListItem, CssBaseline, ThemeProvider, createTheme,
+    Paper, List, ListItem, CssBaseline, ThemeProvider, createTheme,
     Stack, IconButton, CircularProgress, Alert, useMediaQuery, useTheme, Avatar
 } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
@@ -86,7 +86,12 @@ const SearchScreen: React.FC<SearchScreenProps> = ({ onSearch }) => {
                     <Typography variant={isMobile ? 'h5' : 'h4'} component="h1" sx={{ background: 'linear-gradient(45deg, #00BFFF 30%, #f48fb1 90%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', fontWeight: 700 }}>Geek Chat Roulette</Typography>
                     <Typography>Ваш профиль</Typography>
                     <FormControl fullWidth><InputLabel>Ваш пол</InputLabel><Select value={myGender} label="Ваш пол" onChange={(e) => setMyGender(e.target.value as 'male' | 'female')}><MenuItem value="male">Мужчина</MenuItem><MenuItem value="female">Женщина</MenuItem></Select></FormControl>
-                    <TextField fullWidth label="Ваш возраст" type="number" value={myAge} onChange={(e) => setMyAge(Number(e.target.value))} />
+
+                    {/* === ИЗМЕНЕНИЕ ЗДЕСЬ: TextField заменен на Slider === */}
+                    <Typography gutterBottom>Ваш возраст: {myAge}</Typography>
+                    <Slider value={myAge} onChange={(_e, val) => setMyAge(val as number)} valueLabelDisplay="auto" min={18} max={99} />
+                    {/* === КОНЕЦ ИЗМЕНЕНИЯ === */}
+
                     <Typography>Кого ищем?</Typography>
                     <FormControl fullWidth><InputLabel>Пол собеседника</InputLabel><Select value={partnerGender} label="Пол собеседника" onChange={(e) => setPartnerGender(e.target.value as 'any' | 'male' | 'female')}><MenuItem value="any">Любой</MenuItem><MenuItem value="male">Мужчина</MenuItem><MenuItem value="female">Женщина</MenuItem></Select></FormControl>
                     <Typography gutterBottom>Возраст собеседника: {partnerAge[0]} - {partnerAge[1]}</Typography>
