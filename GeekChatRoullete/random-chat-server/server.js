@@ -9,6 +9,30 @@ const cors = require('cors');
 const app = express();
 app.use(cors());
 
+// ======================= НОВЫЙ КОД: НАСТРОЙКИ ЛОГИРОВАНИЯ =======================
+const LOG_FILE_PATH = './chat_logs.log';
+
+/**
+ * Записывает сообщение в лог-файл.
+ * @param {string} roomId - ID комнаты чата.
+ * @param {string} senderId - ID сокета отправителя.
+ * @param {string} messageText - Текст сообщения.
+ */
+function logMessage(roomId, senderId, messageText) {
+    const timestamp = new Date().toISOString();
+    // Форматируем запись: [Время] [Комната] [Пользователь]: Текст
+    const logEntry = `[${timestamp}] [Room: ${roomId}] [User: ${senderId}]: ${messageText}\n`;
+
+    // fs.appendFile дописывает данные в конец файла.
+    // Если файла нет, он будет создан автоматически.
+    fs.appendFile(LOG_FILE_PATH, logEntry, (err) => {
+        if (err) {
+            console.error('ERROR: Could not write to log file.', err);
+        }
+    });
+}
+// ================================= КОНЕЦ НОВОГО КОДА =================================
+
 // Пути к сертификатам Let's Encrypt
 const privateKey = fs.readFileSync('/etc/letsencrypt/live/geekchatrulette.ru/privkey.pem', 'utf8');
 const certificate = fs.readFileSync('/etc/letsencrypt/live/geekchatrulette.ru/fullchain.pem', 'utf8');
@@ -38,16 +62,13 @@ io.on('connection', (socket) => {
         if (partner) {
             const roomId = socket.id + '#' + partner.id;
 
-            // Присоединяем обоих к комнате
             socket.join(roomId);
             partner.join(roomId);
 
-            // Сохраняем информацию о чате
             activeChats[roomId] = [socket, partner];
             socket.roomId = roomId;
             partner.roomId = roomId;
 
-            // Уведомляем обоих о начале чата
             io.to(roomId).emit('chat_found', {
                 message: 'Собеседник найден!',
                 roomId: roomId
@@ -64,11 +85,16 @@ io.on('connection', (socket) => {
     socket.on('send_message', (data) => {
         // Отправляем сообщение только участникам комнаты
         socket.to(socket.roomId).emit('receive_message', data);
+
+        // ======================= НОВЫЙ КОД: ЛОГИРУЕМ СООБЩЕНИЕ =======================
+        if (socket.roomId && data.text) {
+            logMessage(socket.roomId, socket.id, data.text);
+        }
+        // ================================= КОНЕЦ НОВОГО КОДА =================================
     });
 
     socket.on('disconnect', () => {
         console.log(`User Disconnected: ${socket.id}`);
-        // Если пользователь был в чате, уведомляем партнера
         if (socket.roomId && activeChats[socket.roomId]) {
             const partner = activeChats[socket.roomId].find(s => s.id !== socket.id);
             if (partner) {
@@ -76,7 +102,6 @@ io.on('connection', (socket) => {
             }
             delete activeChats[socket.roomId];
         } else {
-            // Если был в поиске, удаляем из пула
             waitingPool = waitingPool.filter(user => user.id !== socket.id);
         }
     });
@@ -87,9 +112,9 @@ function findPartner(socket) {
 
     for (let i = 0; i < waitingPool.length; i++) {
         const partnerSocket = waitingPool[i];
+        if (!partnerSocket.criteria) continue; // Защита от сокетов без критериев
         const partnerCriteria = partnerSocket.criteria;
 
-        // Проверка совместимости в обе стороны
         const iFitPartnerCriteria =
             (partnerCriteria.partnerGender === 'any' || partnerCriteria.partnerGender === myCriteria.myGender) &&
             (myCriteria.myAge >= partnerCriteria.partnerAge.min && myCriteria.myAge <= partnerCriteria.partnerAge.max);
@@ -99,23 +124,14 @@ function findPartner(socket) {
             (partnerCriteria.myAge >= myCriteria.partnerAge.min && partnerCriteria.myAge <= myCriteria.partnerAge.max);
 
         if (iFitPartnerCriteria && partnerFitsMyCriteria) {
-            // Найден партнер! Удаляем его из пула ожидания
             waitingPool.splice(i, 1);
             return partnerSocket;
         }
     }
-    return null; // Партнер не найден
+    return null;
 }
 
 const HTTPS_PORT = 3228;
 httpsServer.listen(HTTPS_PORT, () => {
     console.log(`SERVER IS RUNNING ON PORT ${HTTPS_PORT} (HTTPS)`);
-});
-
-// HTTP -> HTTPS редирект
-http.createServer((req, res) => {
-    res.writeHead(301, { "Location": "https://" + req.headers['host'] + req.url });
-    res.end();
-}).listen(80, () => {
-    console.log('HTTP server running and redirecting all traffic to HTTPS');
 });

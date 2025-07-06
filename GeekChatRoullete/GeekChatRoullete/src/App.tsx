@@ -4,9 +4,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import {
     Container, Box, Typography, Select, MenuItem,
-    FormControl, InputLabel, TextField, Button, Slider,
+    FormControl, InputLabel, Button, Slider,
     Paper, List, ListItem, CssBaseline, ThemeProvider, createTheme,
-    Stack, IconButton, CircularProgress, Alert, useMediaQuery, useTheme, Avatar
+    Stack, IconButton, CircularProgress, Alert, useMediaQuery, useTheme, Avatar, TextField
 } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
 import LogoutIcon from '@mui/icons-material/Logout';
@@ -66,7 +66,54 @@ const containerVariants = {
 };
 
 // ====================================================================================
-// 2. КОМПОНЕНТ ЭКРАНА ПОИСКА (SearchScreen)
+// 2. КОМПОНЕНТ ЭКРАНА СОГЛАШЕНИЯ
+// ====================================================================================
+interface AgreementScreenProps {
+    onAccept: () => void;
+}
+
+const AgreementScreen: React.FC<AgreementScreenProps> = ({ onAccept }) => {
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
+    return (
+        // === ИЗМЕНЕНИЕ: Этот компонент теперь тоже возвращает только Paper ===
+        <Paper sx={{ p: isMobile ? 3 : 4, borderRadius: 4, backdropFilter: 'blur(10px)', backgroundColor: 'rgba(30, 30, 40, 0.6)', border: '1px solid rgba(255, 255, 255, 0.1)', boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)' }}>
+            <Stack spacing={2.5} alignItems="center">
+                <Typography variant={isMobile ? 'h5' : 'h4'} component="h1" sx={{ fontWeight: 700, textAlign: 'center' }}>
+                    Перед началом
+                </Typography>
+                <Typography variant="body1" sx={{ textAlign: 'center' }}>
+                    Пара простых правил для комфортного общения:
+                </Typography>
+                <List sx={{ width: '100%', px: { xs: 0, sm: 2 } }}>
+                    <ListItem>
+                        <Typography variant="body2">
+                            1. Вы используете сервис <b>«как есть»</b> (as is). Администрация не несет ответственности за контент или действия пользователей в чате.
+                        </Typography>
+                    </ListItem>
+                    <ListItem>
+                        <Typography variant="body2">
+                            2. <b>Проявляйте уважение.</b> В чате запрещены оскорбления, враждебные высказывания и любой другой вредоносный контент. Давайте создадим приятное сообщество вместе!
+                        </Typography>
+                    </ListItem>
+                </List>
+                <Button
+                    variant="contained"
+                    size="large"
+                    onClick={onAccept}
+                    sx={{ mt: 2, width: '100%', py: 1.5, borderRadius: '12px' }}
+                >
+                    Я согласен, начать!
+                </Button>
+            </Stack>
+        </Paper>
+    );
+};
+
+
+// ====================================================================================
+// 3. КОМПОНЕНТ ЭКРАНА ПОИСКА (SearchScreen)
 // ====================================================================================
 interface SearchScreenProps {
     onSearch: (criteria: SearchCriteria) => void;
@@ -79,32 +126,28 @@ const SearchScreen: React.FC<SearchScreenProps> = ({ onSearch }) => {
     const [partnerGender, setPartnerGender] = useState<'male' | 'female' | 'any'>('any');
     const [partnerAge, setPartnerAge] = useState<number[]>([18, 40]);
     const handleSearch = () => onSearch({ myGender, myAge, partnerGender, partnerAge: { min: partnerAge[0], max: partnerAge[1] } });
+
+    // === ИЗМЕНЕНИЕ: Убираем Container отсюда, он будет в App.tsx ===
     return (
-        <Container maxWidth="sm">
-            <Paper sx={{ p: isMobile ? 3 : 4, borderRadius: 4, backdropFilter: 'blur(10px)', backgroundColor: 'rgba(30, 30, 40, 0.6)', border: '1px solid rgba(255, 255, 255, 0.1)', boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)' }}>
-                <Stack spacing={3} alignItems="center">
-                    <Typography variant={isMobile ? 'h5' : 'h4'} component="h1" sx={{ background: 'linear-gradient(45deg, #00BFFF 30%, #f48fb1 90%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', fontWeight: 700 }}>Geek Chat Roulette</Typography>
-                    <Typography>Ваш профиль</Typography>
-                    <FormControl fullWidth><InputLabel>Ваш пол</InputLabel><Select value={myGender} label="Ваш пол" onChange={(e) => setMyGender(e.target.value as 'male' | 'female')}><MenuItem value="male">Мужчина</MenuItem><MenuItem value="female">Женщина</MenuItem></Select></FormControl>
-
-                    {/* === ИЗМЕНЕНИЕ ЗДЕСЬ: TextField заменен на Slider === */}
-                    <Typography gutterBottom>Ваш возраст: {myAge}</Typography>
-                    <Slider value={myAge} onChange={(_e, val) => setMyAge(val as number)} valueLabelDisplay="auto" min={18} max={99} />
-                    {/* === КОНЕЦ ИЗМЕНЕНИЯ === */}
-
-                    <Typography>Кого ищем?</Typography>
-                    <FormControl fullWidth><InputLabel>Пол собеседника</InputLabel><Select value={partnerGender} label="Пол собеседника" onChange={(e) => setPartnerGender(e.target.value as 'any' | 'male' | 'female')}><MenuItem value="any">Любой</MenuItem><MenuItem value="male">Мужчина</MenuItem><MenuItem value="female">Женщина</MenuItem></Select></FormControl>
-                    <Typography gutterBottom>Возраст собеседника: {partnerAge[0]} - {partnerAge[1]}</Typography>
-                    <Slider value={partnerAge} onChange={(_e, val) => setPartnerAge(val as number[])} valueLabelDisplay="auto" min={18} max={99} />
-                    <Button variant="contained" size="large" onClick={handleSearch} sx={{ mt: 2, width: '100%', py: 1.5, borderRadius: '12px' }}>Начать поиск</Button>
-                </Stack>
-            </Paper>
-        </Container>
+        <Paper sx={{ p: isMobile ? 3 : 4, borderRadius: 4, backdropFilter: 'blur(10px)', backgroundColor: 'rgba(30, 30, 40, 0.6)', border: '1px solid rgba(255, 255, 255, 0.1)', boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)' }}>
+            <Stack spacing={3} alignItems="center">
+                <Typography variant={isMobile ? 'h5' : 'h4'} component="h1" sx={{ background: 'linear-gradient(45deg, #00BFFF 30%, #f48fb1 90%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', fontWeight: 700 }}>Geek Chat Roulette</Typography>
+                <Typography>Ваш профиль</Typography>
+                <FormControl fullWidth><InputLabel>Ваш пол</InputLabel><Select value={myGender} label="Ваш пол" onChange={(e) => setMyGender(e.target.value as 'male' | 'female')}><MenuItem value="male">Мужчина</MenuItem><MenuItem value="female">Женщина</MenuItem></Select></FormControl>
+                <Typography gutterBottom>Ваш возраст: {myAge}</Typography>
+                <Slider value={myAge} onChange={(_e, val) => setMyAge(val as number)} valueLabelDisplay="auto" min={18} max={99} />
+                <Typography>Кого ищем?</Typography>
+                <FormControl fullWidth><InputLabel>Пол собеседника</InputLabel><Select value={partnerGender} label="Пол собеседника" onChange={(e) => setPartnerGender(e.target.value as 'any' | 'male' | 'female')}><MenuItem value="any">Любой</MenuItem><MenuItem value="male">Мужчина</MenuItem><MenuItem value="female">Женщина</MenuItem></Select></FormControl>
+                <Typography gutterBottom>Возраст собеседника: {partnerAge[0]} - {partnerAge[1]}</Typography>
+                <Slider value={partnerAge} onChange={(_e, val) => setPartnerAge(val as number[])} valueLabelDisplay="auto" min={18} max={99} />
+                <Button variant="contained" size="large" onClick={handleSearch} sx={{ mt: 2, width: '100%', py: 1.5, borderRadius: '12px' }}>Начать поиск</Button>
+            </Stack>
+        </Paper>
     );
 };
 
 // ====================================================================================
-// 3. КОМПОНЕНТ ЧАТА С ИСПРАВЛЕННОЙ ВЕРСТКОЙ
+// 4. КОМПОНЕНТ ЧАТА
 // ====================================================================================
 interface ChatProps {
     messages: Message[];
@@ -137,8 +180,8 @@ const Chat: React.FC<ChatProps> = ({ messages, onSendMessage, notification, onEx
     };
 
     return (
-        <Container maxWidth="md" sx={{ height: '95vh', display: 'flex', flexDirection: 'column', p: { xs: 1, sm: 2 } }}>
-            <Stack component={Paper} elevation={6} sx={{ flexGrow: 1, p: { xs: 1, sm: 2 }, borderRadius: 4, overflow: 'hidden', backgroundColor: 'rgba(20, 25, 35, 0.7)', backdropFilter: 'blur(10px)' }}>
+        <Container maxWidth="lg" sx={{ height: '100%', display: 'flex', flexDirection: 'column', p: { xs: 0, sm: 2 } }}>
+            <Stack component={Paper} elevation={6} sx={{ flexGrow: 1, p: { xs: 1, sm: 2 }, borderRadius: { xs: 0, sm: 4 }, overflow: 'hidden', backgroundColor: 'rgba(20, 25, 35, 0.7)', backdropFilter: 'blur(10px)', height: '100%' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', p: 1, borderBottom: '1px solid rgba(255, 255, 255, 0.12)' }}>
                     <GroupsIcon color="primary" />
                     <Typography variant="h6" sx={{ ml: 2, flexGrow: 1 }}>Чат с незнакомцем</Typography>
@@ -148,46 +191,16 @@ const Chat: React.FC<ChatProps> = ({ messages, onSendMessage, notification, onEx
                 <List sx={{ flexGrow: 1, overflowY: 'auto', p: { xs: 1, sm: 2 } }}>
                     <AnimatePresence>
                         {messages.map((msg, index) => (
-                            <ListItem
-                                key={index}
-                                sx={{
-                                    display: 'flex',
-                                    justifyContent: msg.from === 'me' ? 'flex-end' : 'flex-start',
-                                    width: '100%', // Важно!
-                                    p: 0,
-                                    my: 1,
-                                }}
-                                component={motion.li}
-                                layout
-                                initial={{ opacity: 0, y: 50 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ type: 'spring', stiffness: 250, damping: 25 }}
-                            >
-                                <Stack direction="row" spacing={1} alignItems="flex-end"
-                                       sx={{
-                                           width: 'auto',
-                                           maxWidth: '100%',
-                                           ml: msg.from === 'me' ? 'auto' : 0, // Важно! Прижимает к правому краю
-                                           mr: msg.from === 'partner' ? 'auto' : 0, // Для собеседника — к левому
-                                       }}
-                                >
+                            <ListItem key={index} sx={{ display: 'flex', justifyContent: msg.from === 'me' ? 'flex-end' : 'flex-start', p: 0, my: 1 }} component={motion.li} layout initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} transition={{ type: 'spring', stiffness: 250, damping: 25 }}>
+                                <Stack direction="row" spacing={1} alignItems="flex-end" sx={{ maxWidth: '85%', ml: msg.from === 'me' ? 'auto' : 0, mr: msg.from === 'partner' ? 'auto' : 0 }}>
                                     {msg.from === 'partner' && <Avatar sx={{ width: 28, height: 28, bgcolor: '#3e4a59' }}><PersonIcon fontSize="small"/></Avatar>}
-                                    <Stack sx={{
-                                        p: '8px 16px',
-                                        borderRadius: msg.from === 'me' ? '20px 5px 20px 20px' : '5px 20px 20px 20px',
-                                        background: msg.from === 'me' ? 'linear-gradient(45deg, #0077B6, #00BFFF)' : '#37474F',
-                                        color: 'white',
-                                        maxWidth: { xs: '90vw', sm: '80vw', md: '70vw' }, // Лучше vw, чтобы не было переполнения
-                                        boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-                                        alignSelf: msg.from === 'me' ? 'flex-end' : 'flex-start', // Важно!
-                                    }}>
+                                    <Stack sx={{ p: '8px 16px', borderRadius: msg.from === 'me' ? '20px 5px 20px 20px' : '5px 20px 20px 20px', background: msg.from === 'me' ? 'linear-gradient(45deg, #0077B6, #00BFFF)' : '#37474F', color: 'white', boxShadow: '0 4px 12px rgba(0,0,0,0.3)' }}>
                                         <Typography variant="body1" sx={{ wordBreak: 'break-word' }}>{msg.text}</Typography>
                                         <Typography variant="caption" sx={{ opacity: 0.7, alignSelf: 'flex-end', mt: 0.5 }}>{formatTime(msg.time)}</Typography>
                                     </Stack>
                                     {msg.from === 'me' && <Avatar sx={{ width: 28, height: 28, bgcolor: 'primary.main' }}><PersonIcon fontSize="small"/></Avatar>}
                                 </Stack>
                             </ListItem>
-
                         ))}
                     </AnimatePresence>
                     <div ref={messagesEndRef} />
@@ -205,11 +218,11 @@ const Chat: React.FC<ChatProps> = ({ messages, onSendMessage, notification, onEx
 }
 
 // ====================================================================================
-// 4. ГЛАВНЫЙ КОМПОНЕНТ ПРИЛОЖЕНИЯ (App)
+// 5. ГЛАВНЫЙ КОМПОНЕНТ ПРИЛОЖЕНИЯ (App)
 // ====================================================================================
 function App() {
-    type ChatState = 'config' | 'searching' | 'chat';
-    const [chatState, setChatState] = useState<ChatState>('config');
+    type ChatState = 'agreement' | 'config' | 'searching' | 'chat';
+    const [chatState, setChatState] = useState<ChatState>('agreement');
     const [messages, setMessages] = useState<Message[]>([]);
     const [notification, setNotification] = useState<string>('');
 
@@ -218,20 +231,13 @@ function App() {
         socket.on('receive_message', (data) => setMessages((list) => [...list, { ...data, from: 'partner' }]));
         socket.on('partner_disconnected', (data) => {
             setNotification(data.message);
-            const timer = setTimeout(() => {
-                setChatState('config');
-                setNotification('');
-            }, 4000);
+            const timer = setTimeout(() => { setChatState('config'); setNotification(''); }, 4000);
             return () => clearTimeout(timer);
         });
-
-        return () => {
-            socket.off('chat_found');
-            socket.off('receive_message');
-            socket.off('partner_disconnected');
-        };
+        return () => { socket.off('chat_found'); socket.off('receive_message'); socket.off('partner_disconnected'); };
     }, []);
 
+    const handleAcceptAgreement = () => setChatState('config');
     const startSearch = (criteria: SearchCriteria) => { socket.emit('start_search', criteria); setChatState('searching'); };
     const sendMessage = (messageText: string) => {
         const messageData = { text: messageText, time: new Date().toISOString() };
@@ -248,6 +254,24 @@ function App() {
 
     const renderContent = () => {
         switch (chatState) {
+            case 'agreement':
+                return (
+                    // === ИЗМЕНЕНИЕ: Оборачиваем в Container здесь ===
+                    <Container maxWidth="sm" sx={{ width: '100%' }}>
+                        <motion.div key="agreement" variants={containerVariants} initial="hidden" animate="visible" exit="exit">
+                            <AgreementScreen onAccept={handleAcceptAgreement} />
+                        </motion.div>
+                    </Container>
+                );
+            case 'config':
+                return (
+                    // === ИЗМЕНЕНИЕ: Оборачиваем в Container здесь ===
+                    <Container maxWidth="sm" sx={{ width: '100%' }}>
+                        <motion.div key="config" variants={containerVariants} initial="hidden" animate="visible" exit="exit">
+                            <SearchScreen onSearch={startSearch} />
+                        </motion.div>
+                    </Container>
+                );
             case 'searching':
                 return (
                     <motion.div key="searching" variants={containerVariants} initial="hidden" animate="visible" exit="exit">
@@ -259,24 +283,20 @@ function App() {
                 );
             case 'chat':
                 return (
-                    <motion.div key="chat" variants={containerVariants} initial="hidden" animate="visible" exit="exit" style={{width: '100%'}}>
+                    <motion.div key="chat" variants={containerVariants} initial="hidden" animate="visible" exit="exit" style={{width: '100%', height: '100%'}}>
                         <Chat messages={messages} onSendMessage={sendMessage} notification={notification} onExit={handleExitChat}/>
                     </motion.div>
                 );
-            case 'config':
             default:
-                return (
-                    <motion.div key="config" variants={containerVariants} initial="hidden" animate="visible" exit="exit">
-                        <SearchScreen onSearch={startSearch} />
-                    </motion.div>
-                );
+                return null;
         }
     };
 
     return (
         <ThemeProvider theme={beautifulTheme}>
             <CssBaseline />
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', width: '100vw', background: 'linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%)', overflow: 'hidden' }}>
+            {/* === ИЗМЕНЕНИЕ: Убираем горизонтальные отступы для xs, чтобы дочерние компоненты управляли своей шириной === */}
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100dvh', width: '100vw', background: 'linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%)', overflow: 'hidden', p: { xs: 0, sm: 2 } }}>
                 <AnimatePresence mode="wait">{renderContent()}</AnimatePresence>
             </Box>
         </ThemeProvider>
